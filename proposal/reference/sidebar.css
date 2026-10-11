@@ -1,0 +1,124 @@
+/* local patch: Codex-style legacy sidebar for T3 Code (Nightly)
+   Performance rules for this file:
+   - no :has() with a descendant combinator (only cheap child-only :has where nothing else works)
+   - looping animations only use transform/opacity so they run on the compositor
+   - no transition: all */
+
+/* ---- Rhythm: 32px rows, 15px text, 16px icons, 10px icon gap ---- */
+:root{--t3p-text:.9375rem;--t3p-icon:16px;--t3p-gap:10px;--t3p-ease:cubic-bezier(.2,0,0,1);
+  --t3p-ring:conic-gradient(from 0deg,transparent 0deg 40deg,var(--sidebar-foreground) 330deg,transparent 331deg),color-mix(in srgb,var(--sidebar-foreground) 14%,transparent);
+  --t3p-ring-mask:radial-gradient(farthest-side,transparent calc(100% - 1.75px),#000 calc(100% - 1.5px))}
+
+/* ---- Search row reads like Codex "New chat" ---- */
+[data-testid="command-palette-trigger"]{font-size:var(--t3p-text);font-weight:400;color:var(--sidebar-foreground);gap:var(--t3p-gap)}
+[data-testid="command-palette-trigger"]>svg{width:var(--t3p-icon);height:var(--t3p-icon)}
+[data-testid="command-palette-trigger"] kbd{opacity:0;transition:opacity 150ms ease-out}
+[data-testid="command-palette-trigger"]:is(:hover,:focus-visible) kbd{opacity:1}
+
+/* ---- "Projects" label: row size, muted; sort/add buttons appear on hover ---- */
+.mb-1.justify-between.pl-2{margin-top:14px;margin-bottom:4px}
+.mb-1.justify-between.pl-2>span{font-size:var(--t3p-text);font-weight:400;color:var(--sidebar-muted-foreground)}
+.mb-1.justify-between.pl-2>div{opacity:0;transition:opacity 150ms ease-out}
+.mb-1.justify-between.pl-2:is(:hover,:focus-within)>div{opacity:1}
+
+/* ---- Project rows: icon + name, no chevron, no gaps between projects ---- */
+[data-sidebar="menu"]:has(>li>.group\/project-header){gap:0}
+.group\/project-header>[data-sidebar="menu-button"]{gap:var(--t3p-gap);transition:background-color 120ms ease-out,color 120ms ease-out}
+.group\/project-header>[data-sidebar="menu-button"]>svg.lucide-chevron-right{display:none}
+.group\/project-header>[data-sidebar="menu-button"]>span.flex.shrink-0>*{width:var(--t3p-icon);height:var(--t3p-icon)}
+.group\/project-header .text-sidebar-foreground\/90{font-size:var(--t3p-text);font-weight:400;color:var(--sidebar-foreground)}
+/* Collapsed project with activity: status sits at the row end like Codex's unread dot, hidden while the row is hovered. */
+.group\/project-header>[data-sidebar="menu-button"]>span.relative:first-child{position:absolute;right:calc(var(--sidebar-row-content-inset) + 2px);margin:0;transition:opacity 150ms ease-out}
+.group\/project-header>[data-sidebar="menu-button"]>span.relative:first-child>svg{display:none}
+.group\/project-header>[data-sidebar="menu-button"]>span.relative:first-child>span{opacity:1}
+.group\/project-header:hover>[data-sidebar="menu-button"]>span.relative:first-child{opacity:0}
+.group\/project-header .rounded-full{width:8px;height:8px}
+/* Hover-only "new thread" button: contextual icon enter (scale .25 -> 1, blur 4px -> 0), .96 on press. */
+.group\/project-header [data-testid="new-thread-button"]{scale:.25;filter:blur(4px);transition:scale 300ms var(--t3p-ease),filter 300ms var(--t3p-ease),color 150ms ease-out}
+.group\/project-header:is(:hover,:focus-within) [data-testid="new-thread-button"]{scale:1;filter:none}
+.group\/project-header [data-testid="new-thread-button"]:active{scale:.96}
+
+/* ---- Thread list: no guide line; collapsed (empty) lists take no space ---- */
+[data-sidebar="menu-sub"]:empty{display:none}
+[data-sidebar="menu-sub"]{border-left-width:0;margin:0;padding:0 0 4px;gap:0}
+/* Thread text lines up with the project name: row inset + icon + gap. */
+[data-sidebar="menu-sub"] [data-sidebar="menu-sub-button"],
+[data-sidebar="menu-sub"]>li>div[data-thread-selection-safe]{padding-left:calc(var(--sidebar-row-content-inset) + var(--t3p-icon) + var(--t3p-gap));padding-right:var(--sidebar-row-content-inset);border-radius:var(--control-radius)}
+[data-thread-item]>[data-sidebar="menu-sub-button"]{color:color-mix(in srgb,var(--sidebar-foreground) 80%,transparent);transition:background-color 120ms ease-out,color 120ms ease-out}
+[data-thread-item]>[data-sidebar="menu-sub-button"]:is(:hover,[data-active="true"]){color:var(--sidebar-foreground)}
+/* Title first, icons after it; long titles fade out instead of "...". */
+[data-thread-item] [data-testid^="thread-title-"]{order:-1;font-size:var(--t3p-text);text-overflow:clip;
+  -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent)}
+[data-sidebar="menu-sub"]>li>div[data-thread-selection-safe]{font-size:.8125rem;color:var(--sidebar-muted-foreground)}
+/* No relative timestamps; the slot only opens on hover so the archive button has room. */
+[data-thread-item] .tabular-nums.text-3xs{display:none}
+[data-thread-item] .min-w-12{min-width:0}
+[data-thread-item]:is(:hover,:focus-within) .min-w-12{min-width:3.75rem}
+/* Hover-only archive button: same contextual icon enter, Codex-size outline icon. */
+[data-thread-item] [data-testid^="thread-archive-"]:not([data-testid^="thread-archive-confirm"]){color:var(--sidebar-muted-foreground);scale:.25;filter:blur(4px);transition:scale 300ms var(--t3p-ease),filter 300ms var(--t3p-ease),color 150ms ease-out}
+[data-thread-item]:is(:hover,:focus-within) [data-testid^="thread-archive-"]:not([data-testid^="thread-archive-confirm"]){scale:1;filter:none}
+[data-thread-item] [data-testid^="thread-archive-"]:not([data-testid^="thread-archive-confirm"]):hover{color:var(--sidebar-foreground)}
+[data-thread-item] [data-testid^="thread-archive-"]:not([data-testid^="thread-archive-confirm"]):active{scale:.96}
+[data-thread-item] [data-testid^="thread-archive-"] svg{width:16px;height:16px}
+/* "Show more" / "Show less": title size, muted. */
+[data-sidebar="menu-sub"] button[data-sidebar="menu-sub-button"]{font-size:var(--t3p-text);font-weight:400;color:var(--sidebar-muted-foreground);transition:color 120ms ease-out,background-color 120ms ease-out}
+[data-sidebar="menu-sub"] button[data-sidebar="menu-sub-button"]:hover{color:var(--sidebar-foreground)}
+
+/* ---- Thread status: 8px dots at the row end; the label stays in the tooltip and for screen readers ---- */
+[data-thread-item] span[role="img"]>span:not(.rounded-full){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+[data-thread-item] span[role="img"]>.rounded-full{width:8px;height:8px}
+/* Finished but unread reads as Codex's blue unread dot. */
+[data-thread-item] span[role="img"][aria-label="Completed"]>.rounded-full,.group\/project-header span.relative[aria-label="Completed"] .rounded-full{background:#3b82f6}
+
+/* ---- Running thread (Working / Connecting): the status dot itself becomes a spinning ring in the
+   icon column, left of the title. It is positioned against the row (the nearest positioned ancestor),
+   so no :has() is needed, and the loop is a pure transform. ---- */
+[data-thread-item] span[role="img"]>.animate-status-pulse{
+  position:absolute;top:50%;left:calc(var(--sidebar-row-content-inset) + 2px);
+  width:12px;height:12px;margin-top:-6px;border-radius:50%;opacity:1;
+  background:var(--t3p-ring);-webkit-mask:var(--t3p-ring-mask);mask:var(--t3p-ring-mask);
+  animation:t3p-spin .9s linear infinite;will-change:transform;contain:strict}
+/* Collapsed project with a running thread: the same ring at the row end. */
+.group\/project-header .animate-status-pulse{
+  width:12px;height:12px;border-radius:50%;opacity:1;
+  background:var(--t3p-ring);-webkit-mask:var(--t3p-ring-mask);mask:var(--t3p-ring-mask);
+  animation:t3p-spin .9s linear infinite;will-change:transform;contain:strict}
+@keyframes t3p-spin{from{transform:rotate(0)}to{transform:rotate(1turn)}}
+
+/* ---- Hover states: one soft fill on every row, a step stronger when selected or pressed.
+   Rows react to their container's :hover so the fill stays while the pointer is on the "..." icon
+   (which belongs to the container, not the row button). ---- */
+:root{--t3p-fill-hover:color-mix(in srgb,var(--sidebar-foreground) 6%,transparent);
+  --t3p-fill-selected:color-mix(in srgb,var(--sidebar-foreground) 9%,transparent);
+  --t3p-fill-press:color-mix(in srgb,var(--sidebar-foreground) 12%,transparent);
+  --t3p-more:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='5' cy='12' r='1.6'/%3E%3Ccircle cx='12' cy='12' r='1.6'/%3E%3Ccircle cx='19' cy='12' r='1.6'/%3E%3C/svg%3E")}
+.group\/project-header>[data-sidebar="menu-button"],[data-thread-item]>[data-sidebar="menu-sub-button"],
+[data-sidebar="menu-sub"] button[data-sidebar="menu-sub-button"],[data-testid="command-palette-trigger"]{border-radius:8px;background-color:transparent}
+.group\/project-header:hover>[data-sidebar="menu-button"],[data-thread-item]:hover>[data-sidebar="menu-sub-button"],
+[data-sidebar="menu-sub"] button[data-sidebar="menu-sub-button"]:hover,[data-testid="command-palette-trigger"]:hover{background-color:var(--t3p-fill-hover)}
+[data-thread-item]>[data-sidebar="menu-sub-button"][data-active="true"]{background-color:var(--t3p-fill-selected);font-weight:400}
+.group\/project-header>[data-sidebar="menu-button"]:active,[data-thread-item]>[data-sidebar="menu-sub-button"]:active,
+[data-sidebar="menu-sub"] button[data-sidebar="menu-sub-button"]:active,[data-testid="command-palette-trigger"]:active{background-color:var(--t3p-fill-press)}
+.group\/project-header:hover .text-sidebar-foreground\/90{color:var(--sidebar-foreground)}
+
+/* ---- "..." on hovered rows: opens T3's context menu (click handled by sidebar.js). It sits left of the
+   row's own hover action (new thread / archive) and enters like the other contextual icons. ---- */
+.group\/project-header::after,[data-thread-item]::after{
+  content:"";position:absolute;top:50%;right:28px;z-index:1;width:24px;height:24px;margin-top:-12px;cursor:pointer;
+  background:var(--sidebar-muted-foreground);-webkit-mask:var(--t3p-more) center/16px 16px no-repeat;mask:var(--t3p-more) center/16px 16px no-repeat;
+  opacity:0;scale:.25;filter:blur(4px);pointer-events:none;
+  transition:opacity 150ms ease-out,scale 300ms var(--t3p-ease),filter 300ms var(--t3p-ease)}
+.group\/project-header:hover::after,[data-thread-item]:hover::after{opacity:1;scale:1;filter:none;pointer-events:auto}
+
+/* ---- Icons: Codex-weight outlines (1.5px) across the sidebar, 16px for hover actions, muted until hovered ---- */
+[data-sidebar] svg.lucide{stroke-width:1.5}
+.group\/project-header [data-testid="new-thread-button"]{color:var(--sidebar-muted-foreground)}
+.group\/project-header [data-testid="new-thread-button"]:hover{color:var(--sidebar-foreground)}
+.group\/project-header [data-testid="new-thread-button"] svg{width:16px;height:16px}
+
+@media (prefers-reduced-motion:reduce){
+  [data-thread-item] span[role="img"]>.animate-status-pulse,.group\/project-header .animate-status-pulse{animation-duration:2.4s}
+  .group\/project-header [data-testid="new-thread-button"],
+  [data-thread-item] [data-testid^="thread-archive-"]{scale:1;filter:none;transition:color 150ms ease-out}
+  .group\/project-header::after,[data-thread-item]::after{scale:1;filter:none;transition:opacity 150ms ease-out}
+}
