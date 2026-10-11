@@ -1,0 +1,39 @@
+/* local patch: Codex-style chat timeline for T3 Code (Nightly) */
+
+/* ---- Messages: 15px reading size, 1.6 line height ---- */
+.chat-markdown{font-size:.9375rem;line-height:1.6}
+[data-assistant-citation-source] .chat-markdown{color:color-mix(in srgb,var(--foreground) 92%,transparent)}
+[data-assistant-citation-source] .chat-markdown>p+p{margin-top:.85em}
+
+/* ---- Activity rows (reasoning, tool groups, thinking): 16px icon + muted sentence at text size ---- */
+.group\/timeline-row>div.flex{font-size:.9375rem;gap:8px;min-height:1.75rem}
+.group\/timeline-row>div.flex .text-sm{font-size:inherit}
+.group\/timeline-row>div.flex>span.size-6 svg{width:16px;height:16px;stroke-width:1.75}
+.group\/timeline-row>div.flex .text-secondary-label{color:color-mix(in srgb,var(--foreground) 52%,transparent);transition:color 120ms ease-out}
+/* Clickable rows brighten on hover instead of getting a box. */
+:is(button,[role="button"]).group\/timeline-row{background:transparent}
+:is(button,[role="button"]).group\/timeline-row:hover .text-secondary-label{color:color-mix(in srgb,var(--foreground) 72%,transparent)}
+:is(button,[role="button"]).group\/timeline-row:hover>div.flex>span.size-6 svg{opacity:1}
+
+/* ---- "Working for 20s" header of a running turn: no divider line, quieter text ---- */
+div.border-b.pb-2.pt-1:has(>div.h-6.tabular-nums){border-bottom-width:0;padding-bottom:4px}
+div.border-b.pb-2.pt-1>div.h-6.tabular-nums{font-size:.8125rem;color:color-mix(in srgb,var(--foreground) 45%,transparent)}
+
+/* ---- Reasoning summaries: one step smaller and quieter than the tool rows ---- */
+[data-v2-item-type="reasoning"]>div.flex{font-size:.8125rem;min-height:1.5rem}
+[data-v2-item-type="reasoning"]>div.flex>span.size-6 svg{width:14px;height:14px}
+[data-v2-item-type="reasoning"] .text-secondary-label{color:color-mix(in srgb,var(--foreground) 42%,transparent)}
+
+/* ---- Live "Thinking" row: same size as reasoning, and the brain icon becomes the sidebar's
+   spinning ring. T3 renders the row twice (base + a masked highlight copy for its light sweep);
+   both rings spin in sync. Only transform is animated, so it stays on the compositor. ---- */
+[data-timeline-row-kind="thinking"] .group\/timeline-row>div.flex{font-size:.8125rem;min-height:1.5rem}
+[data-timeline-row-kind="thinking"] .group\/timeline-row span.size-4>svg{display:none}
+[data-timeline-row-kind="thinking"] .group\/timeline-row span.size-4{
+  width:12px;height:12px;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0deg 40deg,currentColor 330deg,transparent 331deg),color-mix(in srgb,currentColor 18%,transparent);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 1.75px),#000 calc(100% - 1.5px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 1.75px),#000 calc(100% - 1.5px));
+  animation:t3p-chat-spin .9s linear infinite;will-change:transform}
+@keyframes t3p-chat-spin{from{transform:rotate(0)}to{transform:rotate(1turn)}}
+@media (prefers-reduced-motion:reduce){[data-timeline-row-kind="thinking"] .group\/timeline-row span.size-4{animation-duration:2.4s}}
